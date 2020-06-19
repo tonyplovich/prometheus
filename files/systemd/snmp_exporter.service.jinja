@@ -1,0 +1,11 @@
+[Unit]
+Description=Prometheus SNMP Exporter
+Documentation=https://github.com/prometheus/snmp_exporter/
+After=network.target
+
+[Service]
+User=prometheus
+ExecStart={{ base_dir }}/snmp_exporter/snmp_exporter --config.file={{ base_dir }}/snmp_exporter/snmp.yml {{ options }}
+
+[Install]
+WantedBy=multi-user.target

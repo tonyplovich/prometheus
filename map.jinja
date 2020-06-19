@@ -1,0 +1,82 @@
+{% set pre = salt['grains.filter_by']({
+  'default': {
+    'pkg_install': False,
+    'base_dir': '/opt/prometheus',
+    'data_dir': '/opt/prometheus/data',
+    'ca_server': salt['grains.get']('master'),
+    'salt_api_sd': {
+      'user': 'svcprom',
+      'api_url': 'https://sm:8000',
+      'output_file': '/opt/prometheus/file_sd.json',
+      'node_exporter_port': '9100',
+    },
+    'server': {
+      'url': 'https://github.com/prometheus/prometheus/releases/download/v2.18.1/prometheus-2.18.1.linux-amd64.tar.gz',
+      'hashfile_url': 'https://github.com/prometheus/prometheus/releases/download/v2.18.1/sha256sums.txt',
+      'archive_name': 'prometheus-2.18.1.linux-amd64',
+      'listen_address': '0.0.0.0',
+      'port': '9090',
+      'config': {
+        'rule_files': ['/opt/prometheus/prometheus/rules/*.rules'],
+        'global': {
+          'scrape_interval': '5m',
+        },
+        'scrape_configs': [
+
+          { 
+            'job_name': 'prometheus',
+            'scrape_interval': '1m',
+            'static_configs': [
+              { 'targets': ['localhost:9090'], },
+            ],
+          },
+
+          { 
+            'job_name': 'nodes',
+            'scrape_interval': '2m',
+            'scheme': 'https',
+            'tls_config': {
+              'ca_file': '/opt/prometheus/prom-ca.crt',
+            },
+            'file_sd_configs': [
+              { 
+                'files': [
+                  '/opt/prometheus/file_sd.json',
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    },
+    'blackbox_exporter': {
+      'url': 'https://github.com/prometheus/blackbox_exporter/releases/download/v0.16.0/blackbox_exporter-0.16.0.linux-amd64.tar.gz',
+      'hashfile_url': 'https://github.com/prometheus/blackbox_exporter/releases/download/v0.16.0/sha256sums.txt',
+      'archive_name': 'blackbox_exporter-0.16.0.linux-amd64'
+    },
+    'node_exporter': {
+      'url': 'https://github.com/prometheus/node_exporter/releases/download/v1.0.0-rc.1/node_exporter-1.0.0-rc.1.linux-amd64.tar.gz',
+      'hashfile_url': 'https://github.com/prometheus/node_exporter/releases/download/v1.0.0-rc.1/sha256sums.txt',
+      'archive_name': 'node_exporter-1.0.0-rc.1.linux-amd64',
+      'web_config': {
+        'tls_server_config': {
+          'cert_file': '/opt/prometheus/prom.crt',
+          'key_file':  '/opt/prometheus/prom.key',
+        },
+      },
+    },
+    'snmp_exporter': {
+      'url': 'https://github.com/prometheus/snmp_exporter/releases/download/v0.17.0/snmp_exporter-0.17.0.linux-amd64.tar.gz',
+      'hashfile_url': 'https://github.com/prometheus/snmp_exporter/releases/download/v0.17.0/sha256sums.txt',
+      'archive_name': 'snmp_exporter-0.17.0.linux-amd64'
+    },
+    'alertmanager': {
+      'url': 'https://github.com/prometheus/alertmanager/releases/download/v0.20.0/alertmanager-0.20.0.linux-amd64.tar.gz',
+      'hashfile_url': 'https://github.com/prometheus/alertmanager/releases/download/v0.20.0/sha256sums.txt',
+      'archive_name': 'alertmanager-0.20.0.linux-amd64'
+    },
+  },
+}, base='default') %}
+
+# This allows the lists to be merged instead of overwritten, grains.filter_by overwrites them.
+{% set prometheus = salt['pillar.get']('prometheus', default=pre, merge=True, merge_nested_lists=True) %}
