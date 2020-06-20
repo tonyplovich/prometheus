@@ -9,10 +9,10 @@ FILENAME = '{{ config.output_file }}'
 PORT = '{{ config.node_exporter_port }}'
 
 session = requests.Session()
-session.post(SALT_API + '/login', json={'eauth': 'pam', 'username': USERNAME, 'password': PASSWORD}, verify=False)
-r = session.post(SALT_API, json={'client': 'wheel', 'fun': 'key.list', 'match': 'accepted'}, verify=False)
+session.post(SALT_API + '/login', json={'eauth': 'pam', 'username': USERNAME, 'password': PASSWORD})
+r = session.post(SALT_API, json={'client': 'runner', 'fun': 'mine.get', 'arg': ['*', 'node_exporter']})
 
-minions = r.json()['return'][0]['data']['return']['minions']
+minions = r.json()['return'][0].keys()
 targets = []
 
 for minion in minions:

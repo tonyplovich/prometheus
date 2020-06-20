@@ -30,14 +30,18 @@ peer:
     - x509.sign_remote_certificate
 ```
 ### Salt API Node Discovery
-The formula provides a modist Python script to manage node_exporter targets via [Prometheus' file service discovery](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#file_sd_config).  By default, the script will add targets for each minion that the master has accepted keys for.  When the keys are removed, the corresponding target will be removed next time the script runs.
+The formula provides a modist Python script to manage node_exporter targets via [Prometheus' file service discovery](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#file_sd_config).  By default, the script will add targets for each minion that has a mine entry for node_exporter.  When the minion's keys are removed, their mine data will be removed, and the corresponding Prometheus target will be removed next time the script runs.
 * Install [Salt's API service](https://docs.saltstack.com/en/latest/ref/netapi/all/salt.netapi.rest_cherrypy.html#a-rest-api-for-salt).
 * Update the Salt master's config:
 ```
 external_auth:
   pam:
     SOMEUSER:
-      - '@wheel'
+      - '@runner':
+        - 'mine.get':
+            args:
+            - '\*'
+            - 'node_exporter'
 rest_cherrypy:
   port: 8000
   ssl_crt: /etc/pki/tls/certs/salt-api.pem.crt
@@ -54,11 +58,21 @@ rest_cherrypy:
 * Assign prometheus.salt_api_sd to the Prom server
 * Add pillar config:
 ```
+mine_functions:
+  node_exporter:
+    - mine_function: test.echo
+    - True
+
 prometheus:
   salt_api_sd:
     user: SOMEUSER
     pass: SOMEPASS
     
+```
+* Update minion config to allow newer form of module state
+```
+use_superseded:
+  - module.run
 ```
 ### Custom Metrics via Textfile Collectors
 [Textfile collectors](https://github.com/prometheus/node_exporter#textfile-collector) provide an easy way to get metrics into Prometheus: just drop them in a file and the node_exporter will make them available to Prometheus.  A simple approach to this is with a custom script and a cronjob / systemd timer.

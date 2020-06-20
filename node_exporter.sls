@@ -52,3 +52,9 @@ node_exporter_service:
   service.running:
     - name: node_exporter
     - enable: True
+
+{%- if grains['id'] not in salt['mine.get']('*', 'node_exporter') %}
+mine_node_exporter:
+  module.run:
+    - mine.update: []
+{%- endif %}
